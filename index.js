@@ -1,7 +1,8 @@
 const fs = require('fs');
 const path = require('path');
-const util = require('util');
 
+const exportDir = './generatedFiles';
+const exportFile = 'edlJson';
 const dir = './imports';
 const VALID_SOUND_EXTENSIONS = /.mp3/gi;
 
@@ -24,36 +25,57 @@ const walkSync = (dir, filelist = []) => {
   return filelist.flat();
 };
 
-return walkSync(dir)
-  .filter((f) => { // Filter out non-edl files
-    const strArray = f.split("\.");
-    return strArray[strArray.length - 1] === 'edl';
-  })
-  .map((m) => { // Read each file so we can start messing with the numbers
-    fs.readFile(m, 'utf8', function (err, data) {
-      if (err) throw err;
 
-      return data.split(/\r\n|\r|\n/) // split lines up
-        .reduce((col, item, i) => {
-          const hit = Boolean(item.match(VALID_SOUND_EXTENSIONS));
-          if (hit) {
-            let columns = splitFileByLines[i - 1];
-            const index = item.lastIndexOf(" ") + 1;
-            const fileName = item.substr(index);
+const EDLToJsonReducer = (lineArray = []) => {
+  return lineArray.reduce((col, item, i) => {
+    const hit = Boolean(item.match(/.mp3/gi));
+    if (hit) {
+      let columns = lineArray[i - 1];
+      const index = item.lastIndexOf(" ") + 1;
+      const fileName = item.substr(index);
 
-            const startColumns = columns.indexOf(":") - 2;
-            columns = columns.substr(startColumns).split(" ");
-            col.push({
-              columns: {
-                sourceIn: columns[0],
-                sourceOut: columns[1],
-                recordIn: columns[2],
-                recordOut: columns[3]
-              },
-              file: fileName
-            });
-          }
-          return col;
-        }, []);
-    });
-  })
+      const startColumns = columns.indexOf(":") - 2;
+      columns = columns.substr(startColumns).split(" ");
+      col.push({
+        columns: {
+          sourceIn: columns[0],
+          sourceOut: columns[1],
+          recordIn: columns[2],
+          recordOut: columns[3]
+        },
+        file: fileName
+      });
+    }
+    return col;
+  }, []);
+}
+
+let files = walkSync(dir);
+
+// Filter out non-edl files
+files = files.filter((f) => {
+  const strArray = f.split("\.");
+  return strArray[strArray.length - 1] === 'edl';
+})
+
+
+const fileArray = files.map((m) => fs.readFileSync(m, 'utf8'));
+
+const output = fileArray.reduce((col, item, i) => {
+  const lineArray = item.split(/\r\n|\r|\n/gi);
+  const data = EDLToJsonReducer(lineArray);
+  col.data[i + 1] = data;
+  return col
+}, { data: {} });
+
+console.log(output);
+
+// make the directory if it has been deleted
+if (!fs.existsSync(exportDir)) {
+  fs.mkdirSync(exportDir);
+}
+
+fs.writeFile(`${exportDir}/${exportFile}`, JSON.stringify(output, null, '\t'), (err) => {
+  if (err) throw err;
+  console.log('Saved EDL to JSON file');
+});
