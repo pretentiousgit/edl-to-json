@@ -23,17 +23,20 @@ const walkSync = (dir, filelist = []) => {
 };
 
 let files = walkSync('./imports');
+
+// Filter out non-edl files
 files = files.filter((f) => {
   const strArray = f.split("\.");
   return strArray[strArray.length - 1] === 'edl';
 })
 
-// console.log(files)
 // Read each file so we can start messing with the numbers
 files.map((m) => {
   fs.readFile(m, 'utf8', function (err, data) {
     if (err) throw err;
-    console.log('OK: ' + m);
-    console.log(data)
+
+    const splitFileByLines = data.match(/\r\n|\r|\n/gi);
+    console.log(splitFileByLines);
+
   });
 })
