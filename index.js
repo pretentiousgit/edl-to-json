@@ -37,15 +37,17 @@ files.map((m) => {
 
     const splitFileByLines = data.split(/\r\n|\r|\n/);
 
-    const mp3AndTimecodes = splitFileByLines.reduce((col, item, i) => {
+    const columnsAndFileNames = splitFileByLines.reduce((col, item, i) => {
       const hit = Boolean(item.match(/.mp3/gi));
       if (hit) {
-        col.push(splitFileByLines[i - 1])
-        col.push(splitFileByLines[i])
+        col.push({
+          columns: splitFileByLines[i - 1],
+          file: splitFileByLines[i]
+        });
       }
       return col;
     }, []);
 
-    console.log(mp3AndTimecodes);
+    console.log(columnsAndFileNames);
   });
 })
