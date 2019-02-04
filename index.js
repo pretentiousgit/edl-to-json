@@ -35,8 +35,17 @@ files.map((m) => {
   fs.readFile(m, 'utf8', function (err, data) {
     if (err) throw err;
 
-    const splitFileByLines = data.match(/\r\n|\r|\n/gi);
-    console.log(splitFileByLines);
+    const splitFileByLines = data.split(/\r\n|\r|\n/);
 
+    const mp3AndTimecodes = splitFileByLines.reduce((col, item, i) => {
+      const hit = Boolean(item.match(/.mp3/gi));
+      if (hit) {
+        col.push(splitFileByLines[i - 1])
+        col.push(splitFileByLines[i])
+      }
+      return col;
+    }, []);
+
+    console.log(mp3AndTimecodes);
   });
 })
